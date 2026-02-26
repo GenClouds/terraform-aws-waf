@@ -5,10 +5,10 @@ locals {
   transformed_simple_rules = [
     for idx, rule in var.simple_rules : merge(
       {
-        name     = rule.name
-        priority = rule.priority
-        action   = try(rule.action, "block")
-        enabled  = try(rule.enabled, true)
+        name            = rule.name
+        priority        = rule.priority
+        action          = try(rule.action, "block")
+        enabled         = try(rule.enabled, true)
         override_action = lookup(rule, "managed_rule_group", null) != null ? try(rule.override_action, "none") : null
 
         visibility_config = {

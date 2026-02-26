@@ -16,7 +16,7 @@ variable "name" {
 variable "description" {
   description = "Description of the Web ACL"
   type        = string
-  default     = ""
+  default     = "Managed by Terraform"
 }
 
 variable "scope" {
