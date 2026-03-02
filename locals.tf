@@ -57,9 +57,7 @@ locals {
     [for r in var.rules : r if try(r.enabled, true)]
   )
 
-  # For validation and derived priorities
-  rule_priorities        = [for r in local.effective_rules : r.priority]
-  unique_rule_priorities = toset(local.rule_priorities)
+
 
   # Mode switching: rewrite actions based on var.mode
   final_rules = var.mode == "monitor" ? [
