@@ -79,10 +79,9 @@ locals {
   # Logging configuration
   create_logging_resources = var.enable_logging && var.logging_mode == "s3"
   raw_log_bucket_name      = var.log_bucket_name != "" ? var.log_bucket_name : "${var.name}-waf-logs"
-  # Sanitize derived bucket name to be S3-compliant (lowercase, only letters, numbers, dots, hyphens)
-  sanitized_log_bucket_name = lower(regexreplace(local.raw_log_bucket_name, "[^a-z0-9.-]", "-"))
-  log_bucket_name           = sanitized_log_bucket_name
-  firehose_name             = "${var.name}-waf-firehose"
+  # Normalize derived bucket name to lowercase; callers can override log_bucket_name if needed
+  log_bucket_name = lower(local.raw_log_bucket_name)
+  firehose_name   = "${var.name}-waf-firehose"
 
   # Highest user-defined rule priority (used to place path rate limits after user rules)
   max_rule_priority = length(local.final_rules) > 0 ? max([for r in local.final_rules : r.priority]) : 0
