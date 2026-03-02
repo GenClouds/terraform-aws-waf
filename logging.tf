@@ -13,6 +13,16 @@ resource "aws_s3_bucket" "waf_logs" {
   })
 }
 
+resource "aws_s3_bucket_versioning" "waf_logs" {
+  count = local.create_logging_resources ? 1 : 0
+
+  bucket = aws_s3_bucket.waf_logs[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "waf_logs" {
   count = local.create_logging_resources ? 1 : 0
 
@@ -112,7 +122,6 @@ resource "aws_iam_role_policy" "firehose" {
         Action = [
           "s3:AbortMultipartUpload",
           "s3:GetBucketLocation",
-          "s3:GetObject",
           "s3:ListBucket",
           "s3:ListBucketMultipartUploads",
           "s3:PutObject"

@@ -495,6 +495,13 @@ resource "aws_wafv2_web_acl" "this" {
   description = var.description
   scope       = var.scope
 
+  lifecycle {
+    precondition {
+      condition     = length(local.all_rules) == length(toset([for r in local.all_rules : r.priority]))
+      error_message = "All WAF rules must have unique priorities. Duplicate priorities were detected."
+    }
+  }
+
   default_action {
     dynamic "allow" {
       for_each = var.default_action == "allow" ? [1] : []

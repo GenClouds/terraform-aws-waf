@@ -17,7 +17,8 @@ locals {
           sampled_requests_enabled   = try(rule.visibility_config.sampled_requests_enabled, true)
         }
       },
-      lookup(rule, "ip_addresses", null) != null ? {
+      # IP set reference via simple_rules - requires ip_set_key
+      lookup(rule, "ip_set_key", null) != null ? {
         statement = {
           ip_set_reference_statement = {
             ip_set_key = rule.ip_set_key
@@ -56,6 +57,10 @@ locals {
     [for r in var.rules : r if try(r.enabled, true)]
   )
 
+  # For validation and derived priorities
+  rule_priorities        = [for r in local.effective_rules : r.priority]
+  unique_rule_priorities = toset(local.rule_priorities)
+
   # Mode switching: rewrite actions based on var.mode
   final_rules = var.mode == "monitor" ? [
     for rule in local.effective_rules : merge(rule, {
@@ -73,14 +78,20 @@ locals {
 
   # Logging configuration
   create_logging_resources = var.enable_logging && var.logging_mode == "s3"
-  log_bucket_name          = var.log_bucket_name != "" ? var.log_bucket_name : "${var.name}-waf-logs"
-  firehose_name            = "${var.name}-waf-firehose"
+  raw_log_bucket_name      = var.log_bucket_name != "" ? var.log_bucket_name : "${var.name}-waf-logs"
+  # Sanitize derived bucket name to be S3-compliant (lowercase, only letters, numbers, dots, hyphens)
+  sanitized_log_bucket_name = lower(regexreplace(local.raw_log_bucket_name, "[^a-z0-9.-]", "-"))
+  log_bucket_name           = sanitized_log_bucket_name
+  firehose_name             = "${var.name}-waf-firehose"
+
+  # Highest user-defined rule priority (used to place path rate limits after user rules)
+  max_rule_priority = length(local.final_rules) > 0 ? max([for r in local.final_rules : r.priority]) : 0
 
   # Path rate limits transformation
   path_rate_limit_rules = [
     for idx, limit in var.path_rate_limits : {
       name     = "PathRateLimit-${idx}"
-      priority = 100 + idx
+      priority = local.max_rule_priority + 10 + idx
       action   = "block"
       enabled  = true
 
